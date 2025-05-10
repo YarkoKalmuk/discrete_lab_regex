@@ -51,7 +51,6 @@ class DotState(State):
         super().__init__()
 
     def check_self(self, char: str):
-        # Implement
         return True
 
 
@@ -61,7 +60,6 @@ class AsciiState(State):
     """
 
     def __init__(self, symbol: str) -> None:
-        # Implement
         self.state_symbol = symbol
         super().__init__()
 
@@ -75,17 +73,12 @@ class StarState(State):
     """
 
     def __init__(self, checking_state: State):
-        # Implement
         self.checking_state = checking_state
         super().__init__()
+        self.next_states.append(self)
 
     def check_self(self, char):
-        for state in self.next_states:
-            if state.check_self(char):
-                return True
-
-        return False
-
+        return self.checking_state.check_self(char)
 
 class PlusState(State):
 
@@ -102,15 +95,62 @@ class RegexFSM:
     curr_state: State = StartState()
 
     def __init__(self, regex_expr: str) -> None:
-
         prev_state = self.curr_state
         tmp_next_state = self.curr_state
 
-        for char in regex_expr:
-            tmp_next_state = self.__init_next_state(char, prev_state, tmp_next_state)
-            prev_state.next_states.append(tmp_next_state)
-            prev_state = tmp_next_state
-        tmp_next_state.next_states.append(TerminationState())
+        i = 0
+        while i <= len(regex_expr)-1:
+            tmp_next_state = self.__init_next_state(regex_expr[i], prev_state, tmp_next_state)
+
+            if i+1 <= len(regex_expr)-1 and regex_expr[i+1] == "*":
+                star_state = self.__init_next_state("*", prev_state, tmp_next_state)
+                prev_state.next_states.append(star_state)
+
+                prev_state = star_state
+                tmp_next_state = star_state
+                i += 2
+            else:
+                prev_state.next_states.append(tmp_next_state)
+                prev_state = tmp_next_state
+                i += 1
+        termination = TerminationState()
+        tmp_next_state.next_states.append(termination)
+
+        self.add_empty_transitions()
+
+    def add_empty_transitions(self):
+        visited = set()
+        stack = [self.curr_state]
+        prev = None
+        state = None
+
+        while stack:
+            prev = state
+            state = stack.pop()
+            if id(state) in visited:
+                continue
+            visited.add(id(state))
+
+            if isinstance(state, StarState):
+                possible_connections = self.recursive_star_connections(state.next_states)
+                prev.next_states += possible_connections
+
+            stack += state.next_states
+
+    def recursive_star_connections(self, next_candidates, result=None):
+        if result is None:
+            result = []
+
+        for next_state in next_candidates:
+            if isinstance(next_state, StarState):
+                if next_state not in result:
+                    result.append(next_state)
+                    self.recursive_star_connections(next_state.next_states, result)
+            else:
+                if next_state not in result:
+                    result.append(next_state)
+
+        return result
 
     def __init_next_state(
         self, next_token: str, prev_state: State, tmp_next_state: State
@@ -122,7 +162,6 @@ class RegexFSM:
                 new_state = DotState()
             case next_token if next_token == "*":
                 new_state = StarState(tmp_next_state)
-                prev_state.next_states.append(new_state)
 
             case next_token if next_token == "+":
                 # Implement
@@ -159,9 +198,6 @@ if __name__ == "__main__":
     # print(regex_compiled.check_string("aaaaaa4uhi"))  # True
     # print(regex_compiled.check_string("4uhi"))  # True
     # print(regex_compiled.check_string("meow"))  # False
-    regex_pattern = "br..kisyda.a"
+    regex_pattern = "a.*k"
     regex_compiled = RegexFSM(regex_pattern)
-
-    print(regex_compiled.check_string("ababoy"))  # False
-    print(regex_compiled.check_string("br=-kisydaaa"))  # True
-    print(regex_compiled.check_string(""))  # False
+    print(regex_compiled.check_string("ak"))
