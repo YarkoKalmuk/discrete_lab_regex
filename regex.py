@@ -56,7 +56,7 @@ class DotState(State):
 
 class AsciiState(State):
     """
-    state for alphabet letters or numbers
+    state for ascii symbols
     """
 
     def __init__(self, symbol: str) -> None:
@@ -69,7 +69,7 @@ class AsciiState(State):
 
 class StarState(State):
     """
-    state for * (one or more occurences)
+    state for * (zero or more occurences)
     """
 
     def __init__(self, checking_state: State):
@@ -81,33 +81,35 @@ class StarState(State):
         return self.checking_state.check_self(char)
 
 class PlusState(State):
+    "state for + (one or more occurences)"
 
     def __init__(self, checking_state: State):
-        # Implement
         self.checking_state = checking_state
         super().__init__()
+        self.next_states.append(self)
 
     def check_self(self, char):
         return self.checking_state.check_self(char)
 
 
 class RegexFSM:
-    curr_state: State = StartState()
 
     def __init__(self, regex_expr: str) -> None:
+        self.regex = regex_expr
+        self.curr_state: State = StartState()
         prev_state = self.curr_state
         tmp_next_state = self.curr_state
 
         i = 0
         while i <= len(regex_expr)-1:
-            tmp_next_state = self.__init_next_state(regex_expr[i], prev_state, tmp_next_state)
+            tmp_next_state = self.__init_next_state(regex_expr[i], tmp_next_state)
 
-            if i+1 <= len(regex_expr)-1 and regex_expr[i+1] == "*":
-                star_state = self.__init_next_state("*", prev_state, tmp_next_state)
-                prev_state.next_states.append(star_state)
+            if i+1 <= len(regex_expr)-1 and regex_expr[i+1] in ["*", "+"]:
+                wrapping_state = self.__init_next_state(regex_expr[i+1], tmp_next_state)
+                prev_state.next_states.append(wrapping_state)
 
-                prev_state = star_state
-                tmp_next_state = star_state
+                prev_state = wrapping_state
+                tmp_next_state = wrapping_state
                 i += 2
             else:
                 prev_state.next_states.append(tmp_next_state)
@@ -152,9 +154,7 @@ class RegexFSM:
 
         return result
 
-    def __init_next_state(
-        self, next_token: str, prev_state: State, tmp_next_state: State
-    ) -> State:
+    def __init_next_state(self, next_token: str, tmp_next_state: State) -> State:
         new_state = None
 
         match next_token:
@@ -164,7 +164,6 @@ class RegexFSM:
                 new_state = StarState(tmp_next_state)
 
             case next_token if next_token == "+":
-                # Implement
                 new_state = PlusState(tmp_next_state)
 
             case next_token if next_token.isascii():
@@ -177,7 +176,7 @@ class RegexFSM:
 
     def check_string(self, string: str) -> bool:
         curr_state = self.curr_state
-        for char in string:
+        for i, char in enumerate(string):
             new_state = curr_state.check_next(char)
             if new_state is False:
                 return False
@@ -188,16 +187,10 @@ class RegexFSM:
                 return True
         return False
 
-
-
 if __name__ == "__main__":
-    # regex_pattern = "a*4.+hi"
+    regex_pattern = "ab*cd.+ee."
 
-    # regex_compiled = RegexFSM(regex_pattern)
-
-    # print(regex_compiled.check_string("aaaaaa4uhi"))  # True
-    # print(regex_compiled.check_string("4uhi"))  # True
-    # print(regex_compiled.check_string("meow"))  # False
-    regex_pattern = "a.*k"
     regex_compiled = RegexFSM(regex_pattern)
-    print(regex_compiled.check_string("ak"))
+
+    print(regex_compiled.check_string("abbbbcd9ee0"))
+

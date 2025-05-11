@@ -36,6 +36,28 @@ class Tests(unittest.TestCase):
         self.assertFalse(regex_compiled.check_string("bWnhjelhihi"))
         self.assertFalse(regex_compiled.check_string("bbbbnhjjjjelWWWWWhihiiiiiiik"))
 
+    def test_plus(self):
+        regex_pattern = "r+ngd+4+ndjd"
+        regex_compiled = RegexFSM(regex_pattern)
+
+        self.assertTrue(regex_compiled.check_string("rrrrngddddd4444ndjd"))
+        self.assertTrue(regex_compiled.check_string("rngd4ndjd"))
+        self.assertTrue(regex_compiled.check_string("rrngd44444444ndjd"))
+        self.assertFalse(regex_compiled.check_string("ngdddd44ndjd"))
+        self.assertFalse(regex_compiled.check_string("rngdddd5444ndjd"))
+        self.assertFalse(regex_compiled.check_string("rng44ndjd"))
+
+    def test_mixed_1(self):
+        regex_pattern = "ab*cd+ee."
+        regex_compiled = RegexFSM(regex_pattern)
+
+        self.assertTrue(regex_compiled.check_string("abbbbcddddee0"))
+        self.assertTrue(regex_compiled.check_string("acdeeg"))
+        self.assertTrue(regex_compiled.check_string("abbbbbcdee9"))
+        self.assertFalse(regex_compiled.check_string("abbbcee2"))
+        self.assertFalse(regex_compiled.check_string("abcddee"))
+        self.assertFalse(regex_compiled.check_string("abbbcddeke"))
+
 
 if __name__ == "__main__":
     unittest.main()
