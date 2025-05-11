@@ -188,9 +188,6 @@ class RegexFSM:
         return False
 
 if __name__ == "__main__":
-    regex_pattern = "ab*cd.+ee."
-
+    regex_pattern = "ab*cd+ee."
     regex_compiled = RegexFSM(regex_pattern)
-
-    print(regex_compiled.check_string("abbbbcd9ee0"))
-
+    print(regex_compiled.check_string("abbbbcddee0"))  # True
